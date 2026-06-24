@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2차시: 다시 쓰는 동화 - 게임 & 퀴즈</title>
+<style>
+  :root{
+    --cream:#FFF7EC;
+    --leaf:#5B8C5A;
+    --leaf-dark:#3E6B3D;
+    --sun:#FFC857;
+    --coral:#FF8A65;
+    --ink:#3A2E2C;
+    --card:#FFFFFF;
+    --soft:#F1E6D2;
+    --road:#5E5A56;
+    --road-light:#76716C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+  header{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  header .tag{
+    display:inline-block;
+    background: var(--coral);
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+    padding:6px 16px;
+    border-radius:999px;
+    letter-spacing:2px;
+    margin-bottom:10px;
+  }
+  header h1{
+    font-size:28px;
+    font-weight:800;
+    color: var(--leaf-dark);
+    line-height:1.4;
+  }
+  header p{
+    margin-top:8px;
+    font-size:15px;
+    color:#7a6a63;
+  }
+  nav.tabs{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  nav.tabs button{
+    border:2px solid var(--leaf);
+    background:#fff;
+    color: var(--leaf-dark);
+    font-weight:700;
+    font-size:16px;
+    padding:10px 22px;
+    border-radius:14px;
+    cursor:pointer;
+    transition: all .15s;
+  }
+  nav.tabs button.active{
+    background: var(--leaf);
+    color:#fff;
+  }
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .card{
+    background: var(--card);
+    border-radius:20px;
+    padding:24px;
+    box-shadow: 0 6px 0 var(--soft);
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-size:20px;
+    color: var(--leaf-dark);
+    margin-bottom:6px;
+  }
+  .card .desc{
+    font-size:14px;
+    color:#8a7a72;
+    margin-bottom:16px;
+  }
+
+  /* ------- DRIVING GAME ------- */
+  .game-status{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+    font-weight:700;
+    color: var(--leaf-dark);
+    font-size:15px;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .game-status .mission{
+    background: var(--sun);
+    color: var(--ink);
+    padding:4px 12px;
+    border-radius:8px;
+    font-size:14px;
+    width:100%;
+    text-align:center;
+    font-weight:800;
+  }
+
+  .stage-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio: 3 / 4;
+    max-height:560px;
+    border-radius:16px;
+    overflow:hidden;
+    background: linear-gradient(180deg, #BFE6F5 0%, #BFE6F5 18%, var(--road) 18%, var(--road) 100%);
+    touch-action:none;
+    border:2px solid var(--soft);
+  }
+  .lane-line{
+    position:absolute;
+    width:6px;
+    background: repeating-linear-gradient(
+      180deg,
+      #fff 0px, #fff 24px, transparent 24px, transparent 48px
+    );
+    top:0; bottom:0;
+    opacity:0.7;
+  }
+  .road-edge{
+    position:absolute;
+    top:18%; bottom:0;
+    width:6px;
+    background: var(--sun);
+  }
+
+  .car{
+    position:absolute;
+    width:13%;
+    aspect-ratio: 1/1.15;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    border-radius:12px;
+    z-index:4;
+    transition: left .12s linear;
+  }
+  .car.rabbit{ background:#fff; border:3px solid var(--rabbit-c, #F4A259); }
+  .car.turtle{ background:#fff; border:3px solid var(--leaf); }
+
+  .item, .obstacle{
+    position:absolute;
+    width:13%;
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:800;
+    text-align:center;
+    border-radius:10px;
+    color:#fff;
+    line-height:1.15;
+    padding:2px;
+  }
+  .item{ background: var(--leaf); box-shadow:0 0 0 3px rgba(255,255,255,0.4) inset; }
+  .obstacle{ background: var(--coral); box-shadow:0 0 0 3px rgba(255,255,255,0.4) inset; }
+
+  .pop{
+    position:absolute;
+    font-size:14px;
+    font-weight:900;
+    pointer-events:none;
+    animation: floatUp 0.7s ease-out forwards;
+    z-index:6;
+  }
+  @keyframes floatUp{
+    from{ opacity:1; transform: translateY(0) scale(1); }
+    to{ opacity:0; transform: translateY(-30px) scale(1.3); }
+  }
+  .pop.plus{ color: var(--leaf-dark); }
+  .pop.minus{ color: var(--coral); }
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    background: rgba(255,255,255,0.94);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+    z-index:10;
+  }
+  .overlay h3{
+    font-size:22px;
+    color: var(--leaf-dark);
+    margin-bottom:10px;
+  }
+  .overlay p{
+    font-size:14px;
+    color:#8a7a72;
+    margin-bottom:18px;
+    line-height:1.6;
+  }
+  .overlay .big-score{
+    font-size:40px;
+    font-weight:900;
+    color: var(--coral);
+    margin-bottom:6px;
+  }
+
+  .controls{
+    display:flex;
+    justify-content:center;
+    gap:40px;
+    margin-top:14px;
+  }
+  .ctrl-btn{
+    width:64px;
+    height:64px;
+    border-radius:16px;
+    background:#fff;
+    border:2px solid var(--soft);
+    font-size:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    box-shadow: 0 4px 0 var(--soft);
+  }
+  .ctrl-btn:active{ transform: translateY(2px); box-shadow:none; }
+
+  .btn{
+    display:inline-block;
+    background: var(--coral);
+    color:#fff;
+    font-weight:800;
+    font-size:15px;
+    border:none;
+    padding:12px 24px;
+    border-radius:14px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #d9603f;
+    transition: transform .1s;
+  }
+  .btn:active{transform: translateY(2px); box-shadow:0 2px 0 #d9603f;}
+  .btn.secondary{
+    background: var(--leaf);
+    box-shadow:0 4px 0 var(--leaf-dark);
+  }
+  .btn.secondary:active{box-shadow:0 2px 0 var(--leaf-dark);}
+
+  .legend{
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    margin-top:12px;
+    font-size:13px;
+    color:#8a7a72;
+    flex-wrap:wrap;
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:14px; height:14px; border-radius:4px; display:inline-block; }
+  .dot.good{ background: var(--leaf); }
+  .dot.bad{ background: var(--coral); }
+
+  /* Quiz (same as before) */
+  .quiz-q{
+    font-size:17px;
+    font-weight:700;
+    margin-bottom:14px;
+    color: var(--ink);
+  }
+  .quiz-q .qnum{
+    display:inline-block;
+    background: var(--sun);
+    color: var(--ink);
+    font-size:13px;
+    font-weight:800;
+    padding:4px 10px;
+    border-radius:8px;
+    margin-right:8px;
+  }
+  .options{
+    display:grid;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .opt{
+    border:2px solid var(--soft);
+    background:#fff;
+    padding:12px 16px;
+    border-radius:12px;
+    font-size:15px;
+    cursor:pointer;
+    text-align:left;
+    transition: all .15s;
+    font-weight:600;
+    color: var(--ink);
+  }
+  .opt:hover{border-color: var(--leaf);}
+  .opt.correct{
+    border-color: var(--leaf);
+    background:#EAF5E9;
+    color: var(--leaf-dark);
+  }
+  .opt.wrong{
+    border-color: var(--coral);
+    background:#FFEFEA;
+    color:#C0492C;
+  }
+  .opt.disabled{pointer-events:none;}
+  .feedback{
+    font-size:14px;
+    font-weight:700;
+    min-height:22px;
+    color: var(--leaf-dark);
+  }
+  .quiz-nav{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:16px;
+  }
+  .progress{
+    font-size:14px;
+    color:#8a7a72;
+    font-weight:700;
+  }
+  .score-box{
+    text-align:center;
+    padding:30px 10px;
+  }
+  .score-box .big{
+    font-size:48px;
+    font-weight:900;
+    color: var(--coral);
+  }
+  .score-box p{margin-top:8px; color:#8a7a72; font-size:15px;}
+  footer{
+    text-align:center;
+    font-size:12px;
+    color:#bda998;
+    margin-top:20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="tag">2차시 · 다시 쓰는 동화</div>
+    <h1>함께 가는 토끼와 거북이</h1>
+    <p>토끼와 거북이의 함께 달리기 운전 게임과 마빗 코딩 퀴즈로 오늘 배운 내용을 정리해 봐요!</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-target="game">🚗 함께 달리기 운전</button>
+    <button data-target="quiz">📝 코딩 퀴즈</button>
+  </nav>
+
+  <!-- GAME PANEL -->
+  <section class="panel active" id="game">
+    <div class="card">
+      <h2>토끼와 거북이, 함께 달리기 운전 게임</h2>
+      <div class="desc">🐰 토끼차와 🐢 거북이차가 같은 차로에서 나란히 함께 달려요. 좌우 버튼(←/→ 키)으로 운전해서 칸에 적힌 <b>글자(말)</b>을 잘 읽고 <b>존중·배려의 말</b>은 모으고, <b>나쁜 말</b>은 피해보세요. 칸의 색깔은 무작위라서 색으로는 구분할 수 없어요!</div>
+
+      <div class="game-status">
+        <span id="scoreText">점수: 0</span>
+        <span id="distText">거리: 0m / 100m</span>
+        <div class="mission" id="missionText">시작 버튼을 눌러 게임을 시작하세요!</div>
+      </div>
+
+      <div class="stage-wrap" id="stage">
+        <div class="overlay" id="startOverlay">
+          <h3>🚗 토끼와 거북이, 함께 달리기</h3>
+          <p>← → 버튼으로 토끼차와 거북이차를<br>함께 움직여요!<br>칸 색깔은 무작위! <b>글자(말)</b>를 보고<br>존중·배려 칸은 모으고 나쁜 말 칸은 피해요.</p>
+          <button class="btn" id="startBtn">게임 시작</button>
+        </div>
+        <div class="overlay" id="endOverlay" style="display:none;">
+          <h3 id="endTitle">🎉 게임 종료!</h3>
+          <div class="big-score" id="finalScore">0점</div>
+          <p id="endComment"></p>
+          <button class="btn" id="restartBtn">다시 하기</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl-btn" id="leftBtn">⬅️</div>
+        <div class="ctrl-btn" id="rightBtn">➡️</div>
+      </div>
+
+      <div class="legend">
+        <span>🚗 칸 색깔은 무작위예요. <b>글자(말)</b>를 잘 읽고 판단하세요!</span>
+        <span><span class="dot good" style="background:var(--leaf)"></span> 존중·배려의 말 (+점수, 속도 UP)</span>
+        <span><span class="dot bad" style="background:var(--coral)"></span> 나쁜 말 (-점수, 속도 DOWN)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ PANEL -->
+  <section class="panel" id="quiz">
+    <div class="card" id="quizCard">
+      <h2>마빗과 함께한 코딩 퀴즈</h2>
+      <div class="desc">2차시에서 배운 동화 다시쓰기, 마빗(Micro:bit), 걸음 수 코딩에 대해 얼마나 잘 기억하고 있는지 확인해봐요.</div>
+      <div id="quizArea"></div>
+    </div>
+  </section>
+
+  <footer>발맞춰 뚜벅뚜벅 · 2차시 학습 게임 &amp; 퀴즈</footer>
+</div>
+
+<script>
+// ---------- TAB SWITCH ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.target).classList.add('active');
+  });
+});
+
+// ---------- DRIVING GAME ----------
+const LANES = 3; // 3개 차로
+const GOAL_DISTANCE = 100; // meters
+const stage = document.getElementById('stage');
+const scoreText = document.getElementById('scoreText');
+const distText = document.getElementById('distText');
+const missionText = document.getElementById('missionText');
+
+const goodWords = ['배려해요', '존중해요', '함께해요', '고마워요', '같이가자', '괜찮아?', '도와줄게', '멋져!'];
+const badWords = ['놀려요', '혼자가', '무시해요', '욕해요', '새치기', '비웃어요'];
+const itemColors = ['#5B8C5A','#FF8A65','#4A90D9','#E07BB5','#F4A259','#9B6BCE','#3EB6A0','#E0C341'];
+
+let rabbitLane = 1;
+let score = 0;
+let distance = 0;
+let running = false;
+let gameLoop = null;
+let spawnLoop = null;
+let speed = 1; // affects spawn/scroll speed multiplier
+let lanes = [];
+let stageW, stageH, laneW, roadTop;
+
+function layoutMetrics(){
+  const rect = stage.getBoundingClientRect();
+  stageW = rect.width;
+  stageH = rect.height;
+  roadTop = stageH * 0.18;
+  laneW = stageW / LANES;
+}
+
+function laneCenterX(laneIdx){
+  return laneIdx * laneW + laneW/2;
+}
+
+function drawLanes(){
+  stage.querySelectorAll('.lane-line, .road-edge').forEach(el=>el.remove());
+  for(let i=1;i<LANES;i++){
+    const line = document.createElement('div');
+    line.className = 'lane-line';
+    line.style.left = (i*laneW - 3) + 'px';
+    line.style.top = roadTop + 'px';
+    stage.appendChild(line);
+  }
+  const left = document.createElement('div');
+  left.className = 'road-edge';
+  left.style.left = '0px';
+  stage.appendChild(left);
+  const right = document.createElement('div');
+  right.className = 'road-edge';
+  right.style.left = (stageW-6) + 'px';
+  stage.appendChild(right);
+}
+
+let rabbitEl, turtleEl;
+
+function createCars(){
+  stage.querySelectorAll('.car').forEach(el=>el.remove());
+  rabbitEl = document.createElement('div');
+  rabbitEl.className = 'car rabbit';
+  rabbitEl.textContent = '🐰';
+  rabbitEl.style.top = (stageH - stageH*0.16) + 'px';
+  stage.appendChild(rabbitEl);
+
+  updateCarPositions();
+}
+
+function updateCarPositions(){
+  const carW = stageW * 0.13;
+  rabbitEl.style.left = (laneCenterX(rabbitLane) - carW/2) + 'px';
+}
+
+// Falling objects
+let objects = []; // {el, lane, y, type:'good'/'bad', word}
+
+function spawnObject(){
+  if(!running) return;
+  const lane = Math.floor(Math.random()*LANES);
+  const isGood = Math.random() < 0.6;
+  const el = document.createElement('div');
+  el.className = isGood ? 'item' : 'obstacle';
+  el.style.background = itemColors[Math.floor(Math.random()*itemColors.length)];
+  const list = isGood ? goodWords : badWords;
+  el.textContent = list[Math.floor(Math.random()*list.length)];
+  const w = stageW*0.13;
+  el.style.left = (laneCenterX(lane) - w/2) + 'px';
+  el.style.top = roadTop + 'px';
+  stage.appendChild(el);
+  objects.push({el, lane, y: roadTop, type: isGood?'good':'bad'});
+}
+
+function gameTick(){
+  if(!running) return;
+  // move objects down
+  const fallSpeed = stageH * 0.012 * speed;
+  const carTop = parseFloat(rabbitEl.style.top);
+  const carH = stageH * 0.13;
+
+  for(let i=objects.length-1;i>=0;i--){
+    const obj = objects[i];
+    obj.y += fallSpeed;
+    obj.el.style.top = obj.y + 'px';
+
+    // collision check with rabbit car (player controlled)
+    if(obj.lane === rabbitLane && obj.y + stageH*0.13 >= carTop && obj.y <= carTop + carH){
+      handleCollision(obj, rabbitEl);
+      obj.el.remove();
+      objects.splice(i,1);
+      continue;
+    }
+
+    if(obj.y > stageH){
+      obj.el.remove();
+      objects.splice(i,1);
+    }
+  }
+
+  // progress distance based on speed
+  distance += 0.12 * speed;
+  if(distance >= GOAL_DISTANCE){
+    distance = GOAL_DISTANCE;
+    endGame(true);
+    return;
+  }
+  distText.textContent = `거리: ${Math.floor(distance)}m / ${GOAL_DISTANCE}m`;
+}
+
+function handleCollision(obj, carEl){
+  const carRect = carEl.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  const popX = carRect.left - stageRect.left;
+  const popY = carRect.top - stageRect.top;
+
+  const pop = document.createElement('div');
+  if(obj.type === 'good'){
+    score += 10;
+    speed = Math.min(2.2, speed + 0.08);
+    pop.className = 'pop plus';
+    pop.textContent = '+10';
+  } else {
+    score = Math.max(0, score - 5);
+    speed = Math.max(0.5, speed - 0.12);
+    pop.className = 'pop minus';
+    pop.textContent = '-5';
+  }
+  pop.style.left = popX + 'px';
+  pop.style.top = popY + 'px';
+  stage.appendChild(pop);
+  setTimeout(()=>pop.remove(), 700);
+
+  scoreText.textContent = '점수: ' + score;
+}
+
+function updateMission(){
+  const messages = [
+    '존중·배려의 말 칸을 모아 속도를 올려요!',
+    '나쁜 말 장애물은 피해야 해요!',
+    '거북이도 함께 달리고 있어요 🐢',
+    '함께 100m를 완주해봐요!'
+  ];
+  missionText.textContent = messages[Math.floor(Math.random()*messages.length)];
+}
+
+function moveLeft(){
+  if(!running) return;
+  rabbitLane = Math.max(0, rabbitLane-1);
+  updateCarPositions();
+}
+function moveRight(){
+  if(!running) return;
+  rabbitLane = Math.min(LANES-1, rabbitLane+1);
+  updateCarPositions();
+}
+
+document.getElementById('leftBtn').addEventListener('click', moveLeft);
+document.getElementById('rightBtn').addEventListener('click', moveRight);
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'ArrowLeft') moveLeft();
+  if(e.key === 'ArrowRight') moveRight();
+});
+
+function startGame(){
+  document.getElementById('startOverlay').style.display = 'none';
+  document.getElementById('endOverlay').style.display = 'none';
+
+  layoutMetrics();
+  drawLanes();
+
+  score = 0;
+  distance = 0;
+  speed = 1;
+  rabbitLane = 1;
+  scoreText.textContent = '점수: 0';
+  distText.textContent = `거리: 0m / ${GOAL_DISTANCE}m`;
+
+  objects.forEach(o=>o.el.remove());
+  objects = [];
+
+  createCars();
+  running = true;
+  updateMission();
+
+  gameLoop = setInterval(gameTick, 50);
+  spawnLoop = setInterval(spawnObject, 850);
+  missionInterval = setInterval(()=>{ if(running) updateMission(); }, 4000);
+}
+
+let missionInterval = null;
+
+function endGame(success){
+  running = false;
+  clearInterval(gameLoop);
+  clearInterval(spawnLoop);
+  clearInterval(missionInterval);
+  objects.forEach(o=>o.el.remove());
+  objects = [];
+
+  document.getElementById('finalScore').textContent = score + '점';
+  const endTitle = document.getElementById('endTitle');
+  let comment = '';
+  if(success){
+    endTitle.textContent = '🎉 함께 결승선에 도착했어요!';
+    if(score >= 80) comment = '토끼와 거북이가 사이좋게 함께 도착했어요! 멋져요 🐰🐢';
+    else comment = '결승선에 도착했어요! 다음엔 존중·배려 칸을 더 모아볼까요?';
+  } else {
+    endTitle.textContent = '게임 종료!';
+    comment = '아쉬워요. 다시 도전해서 함께 완주해봐요!';
+  }
+  document.getElementById('endComment').textContent = comment;
+  document.getElementById('endOverlay').style.display = 'flex';
+  missionText.textContent = '게임이 끝났어요! 다시 시작해보세요.';
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+
+window.addEventListener('resize', ()=>{
+  if(!running) return;
+  layoutMetrics();
+  drawLanes();
+  updateCarPositions();
+});
+
+// ---------- QUIZ ----------
+const quizData = [
+  {
+    q: "'배려의 말로 동화 다시 쓰기' 활동에서 토끼와 거북이 이야기를 다시 쓸 때 가장 중요한 가치는 무엇일까요?",
+    options: [
+      "누가 더 빨리 이기는지 경쟁하기",
+      "배려와 존중을 담아 함께 결승선에 도착하기",
+      "토끼를 더 빨리 달리게 만들기",
+      "거북이를 혼자 두고 가기"
+    ],
+    answer: 1
+  },
+  {
+    q: "마빗(Micro:bit)에서 'LED'는 어떤 역할을 할까요?",
+    options: [
+      "소리를 듣는 역할",
+      "반짝이며 그림이나 숫자를 보여주는 역할",
+      "USB로 충전하는 역할",
+      "건전지를 넣는 자리"
+    ],
+    answer: 1
+  },
+  {
+    q: "마빗을 흔들 때마다 숫자가 1씩 증가하도록 만들기 위해 가장 먼저 해야 할 일은 무엇일까요?",
+    options: [
+      "마빗을 컴퓨터에서 분리한다.",
+      "'거북이 걸음 수' 같은 변수를 만든다.",
+      "마빗의 전원을 끈다.",
+      "버튼을 누르지 않는다."
+    ],
+    answer: 1
+  },
+  {
+    q: "라디오(Radio) 기능을 사용하면 좋은 점은 무엇일까요?",
+    options: [
+      "선이 없어도 친구와 신호(메시지)를 주고받을 수 있다.",
+      "마빗의 화면을 더 밝게 만들어준다.",
+      "걸음 수를 자동으로 지워버린다.",
+      "음악을 더 크게 틀어준다."
+    ],
+    answer: 0
+  },
+  {
+    q: "OX 퀴즈: 토끼와 거북이가 각자의 마빗으로 걸음 수가 같아지면 LED와 음악이 켜지며 '함께 도착했다'는 성취감을 느낄 수 있다. (O/X)",
+    options: [
+      "O (맞아요)",
+      "X (아니에요)"
+    ],
+    answer: 0
+  }
+];
+
+let currentQ = 0;
+let quizScore = 0;
+
+function renderQuiz(){
+  const area = document.getElementById('quizArea');
+  if(currentQ >= quizData.length){
+    area.innerHTML = `
+      <div class="score-box">
+        <div class="big">${quizScore} / ${quizData.length}</div>
+        <p>점을 맞혔어요! 토끼와 거북이처럼 함께 잘 해냈어요 🐰🐢</p>
+        <button class="btn secondary" id="retryQuiz">다시 풀어보기</button>
+      </div>
+    `;
+    document.getElementById('retryQuiz').addEventListener('click', ()=>{
+      currentQ = 0;
+      quizScore = 0;
+      renderQuiz();
+    });
+    return;
+  }
+
+  const item = quizData[currentQ];
+  area.innerHTML = `
+    <div class="quiz-q"><span class="qnum">${currentQ+1}/${quizData.length}</span>${item.q}</div>
+    <div class="options" id="optionsArea"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="quiz-nav">
+      <span class="progress">맞은 개수: ${quizScore}</span>
+      <button class="btn" id="nextBtn" style="display:none;">다음 문제 →</button>
+    </div>
+  `;
+
+  const optionsArea = document.getElementById('optionsArea');
+  item.options.forEach((opt, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'opt';
+    div.textContent = opt;
+    div.addEventListener('click', ()=>{
+      if(div.classList.contains('disabled')) return;
+      document.querySelectorAll('#optionsArea .opt').forEach(o=>o.classList.add('disabled'));
+      const feedback = document.getElementById('feedback');
+      if(idx === item.answer){
+        div.classList.add('correct');
+        feedback.textContent = '정답이에요! 🎉';
+        quizScore++;
+      } else {
+        div.classList.add('wrong');
+        document.querySelectorAll('#optionsArea .opt')[item.answer].classList.add('correct');
+        feedback.textContent = '아쉬워요. 정답을 함께 확인해봐요!';
+      }
+      document.getElementById('nextBtn').style.display = 'inline-block';
+    });
+    optionsArea.appendChild(div);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    currentQ++;
+    renderQuiz();
+  });
+}
+
+renderQuiz();
+</script>
+</body>
+</html>
